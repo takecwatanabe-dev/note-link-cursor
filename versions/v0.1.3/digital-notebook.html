@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Note Link_Cursor v0.1.3</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .version-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+
+        .page-info {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .toolbar {
+            background: white;
+            padding: 10px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .tool-btn:active {
+            transform: scale(0.95);
+        }
+
+        .tool-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .tool-btn:hover {
+            border-color: #667eea;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            background: #e0e0e0;
+            touch-action: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .canvas-wrapper {
+            display: inline-block;
+            margin: 20px auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            background: white;
+        }
+
+        #notebook-canvas {
+            display: block;
+            cursor: crosshair;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .format-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .format-option {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .format-option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .format-option.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .format-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+
+        .format-name {
+            font-weight: 600;
+        }
+
+        .format-desc {
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #ddd;
+            color: #333;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-option.active {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+
+        .size-picker {
+            display: flex;
+            gap: 8px;
+        }
+
+        .size-option {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .size-option.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.1em;
+            }
+            
+            .tool-btn {
+                padding: 6px 10px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div>
+                <h1>📓 Note Link_Cursor <span class="version-badge">v0.1.3</span></h1>
+            </div>
+            <div class="page-info">
+                <span id="pageNumber">ページ 1</span>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <button class="tool-btn active" id="penBtn" title="ペン">
+                ✏️ ペン
+            </button>
+            <button class="tool-btn" id="eraserBtn" title="消しゴム">
+                🧹 消しゴム
+            </button>
+            <button class="tool-btn" id="settingsBtn" title="詳細設定">
+                ⚙️ 詳細設定
+            </button>
+            <button class="tool-btn" id="formatBtn" title="フォーマット変更">
+                📋 フォーマット
+            </button>
+            <button class="tool-btn" id="newPageBtn" title="新しいページ">
+                ➕ ページ追加
+            </button>
+            <button class="tool-btn" id="prevPageBtn" title="前のページ">
+                ⬅️
+            </button>
+            <button class="tool-btn" id="nextPageBtn" title="次のページ">
+                ➡️
+            </button>
+            <button class="tool-btn" id="clearBtn" title="ページをクリア">
+                🗑️ クリア
+            </button>
+            <button class="tool-btn" id="saveBtn" title="保存">
+                💾 保存
+            </button>
+        </div>
+
+        <div class="toolbar" id="colorToolbar" style="display: none;">
+            <div class="color-picker">
+                <div class="color-option active" data-color="#000000" style="background: #000000;" title="黒"></div>
+                <div class="color-option" data-color="#FF0000" style="background: #FF0000;" title="赤"></div>
+                <div class="color-option" data-color="#0000FF" style="background: #0000FF;" title="青"></div>
+                <div class="color-option" data-color="#00AA00" style="background: #00AA00;" title="緑"></div>
+                <div class="color-option" data-color="#FF6B00" style="background: #FF6B00;" title="オレンジ"></div>
+                <div class="color-option" data-color="#9B59B6" style="background: #9B59B6;" title="紫"></div>
+            </div>
+            <div style="border-left: 2px solid #ddd; margin: 0 5px;"></div>
+            <div class="size-picker">
+                <div class="size-option" data-size="2" title="細">
+                    <div style="width: 2px; height: 20px; background: #333;"></div>
+                </div>
+                <div class="size-option active" data-size="4" title="普通">
+                    <div style="width: 4px; height: 20px; background: #333;"></div>
+                </div>
+                <div class="size-option" data-size="8" title="太">
+                    <div style="width: 8px; height: 20px; background: #333;"></div>
+                </div>
+                <div class="size-option" data-size="16" title="極太">
+                    <div style="width: 12px; height: 20px; background: #333;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container" id="canvasContainer">
+            <div class="canvas-wrapper">
+                <canvas id="notebook-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="formatModal">
+        <div class="modal-content">
+            <h2 class="modal-title">📋 ノートフォーマットを選択</h2>
+            <div class="format-grid">
+                <div class="format-option" data-format="dot-a">
+                    <div class="format-icon">📏</div>
+                    <div class="format-name">ドット入りA罫</div>
+                    <div class="format-desc">7mm横罫・中高生向け</div>
+                </div>
+                <div class="format-option" data-format="dot-b">
+                    <div class="format-icon">📐</div>
+                    <div class="format-name">ドット入りB罫</div>
+                    <div class="format-desc">6mm横罫・大学生向け</div>
+                </div>
+                <div class="format-option" data-format="grid-5mm">
+                    <div class="format-icon">⊞</div>
+                    <div class="format-name">5mm方眼</div>
+                    <div class="format-desc">図やグラフ用</div>
+                </div>
+                <div class="format-option" data-format="blank">
+                    <div class="format-icon">📄</div>
+                    <div class="format-name">無地</div>
+                    <div class="format-desc">自由記述</div>
+                </div>
+                <div class="format-option" data-format="kanji-10">
+                    <div class="format-icon">🈯</div>
+                    <div class="format-name">10マス漢字</div>
+                    <div class="format-desc">小学生向け</div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="cancelFormatBtn">キャンセル</button>
+                <button class="btn btn-primary" id="applyFormatBtn">適用</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="notebook.js"></script>
+</body>
+</html>
